@@ -1,5 +1,13 @@
 [[redirects]]
   from = "/api/*"
-  to = "http://202.5.37.238:50004/api/:splat"
+  to = "/.netlify/functions/api-proxy/:splat"
   status = 200
   force = true
+
+# Add headers for CORS if needed
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
