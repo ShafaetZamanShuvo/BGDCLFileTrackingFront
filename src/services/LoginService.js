@@ -28,5 +28,13 @@ const getUserInfo = async (token) => {
   }
 };
 
-export { login, getUserInfo };
+const register = async (data) => {
+  const res = await axios.post(`${API_URL}/api/auth/signup`, data);
+  if (res.status !== 200) {
+    throw new Error("Registration failed. Please try again.");
+  }
+  return res.data;
+};
+
+export { login, getUserInfo, register };
 

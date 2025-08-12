@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import {login,getUserInfo} from "../services/LoginService.js";
+import { login, getUserInfo } from "../services/LoginService.js";
 
 const credentials = ref({
   username: "",
@@ -27,7 +27,10 @@ const submitForm = async (event) => {
     if (response) {
       localStorage.setItem("authToken", response.accessToken);
       localStorage.setItem("user", JSON.stringify(response));
-      localStorage.setItem("userInfo", JSON.stringify(getUserInfo(response.accessToken)) );
+      localStorage.setItem(
+        "userInfo",
+        JSON.stringify(getUserInfo(response.accessToken))
+      );
     }
     router.push({ name: "Homepage" });
   } catch (err) {
@@ -39,12 +42,20 @@ const submitForm = async (event) => {
 </script>
 
 <template>
-  <div class="container d-flex justify-content-center align-items-center min-vh-100">
+  <div
+    class="container d-flex justify-content-center align-items-center min-vh-100"
+  >
     <div class="row w-100">
       <!-- Left side - Company Logo -->
-      <div class="col-md-6 d-flex justify-content-center align-items-center py-5">
+      <div
+        class="col-md-6 d-flex justify-content-center align-items-center py-5"
+      >
         <div class="text-center">
-          <img src="../assets/bgdcl.jpeg" alt="Company Logo" class="w-40 mb-4" />
+          <img
+            src="../assets/bgdcl.jpeg"
+            alt="Company Logo"
+            class="w-40 mb-4"
+          />
           <h1 class="display-4">Bakhrabad Gas Distribution Company Limited</h1>
           <p class="lead text-muted">Customer File Tracking System</p>
         </div>
@@ -92,7 +103,9 @@ const submitForm = async (event) => {
           <div class="mb-3 form-check">
             <input type="checkbox" class="form-check-input" id="remember" />
             <label class="form-check-label" for="remember">Remember me</label>
-            <a href="#" class="float-end text-decoration-none">Forgot password?</a>
+            <a href="#" class="float-end text-decoration-none"
+              >Forgot password?</a
+            >
           </div>
 
           <!-- Login Button -->
@@ -107,7 +120,9 @@ const submitForm = async (event) => {
           <div class="mt-3 text-center">
             <small class="text-muted">
               Don't have an account?
-              <a href="#" class="text-primary">Register now</a>
+              <router-link to="/register" class="text-primary"
+                >Register now</router-link
+              >
             </small>
           </div>
         </form>

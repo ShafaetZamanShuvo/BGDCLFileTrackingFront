@@ -3,6 +3,7 @@ import Homepage from './pages/Homepage.vue';
 import Login from './components/Login.vue';
 import PendingFiles from './components/PendingFiles.vue';
 import RequestedFiles from './components/RequestedFiles.vue';
+import Register from './components/Register.vue';
 
 const routes = [
     {
@@ -31,6 +32,11 @@ const routes = [
         name: "RequestedFiles",
         component: RequestedFiles,
         meta: { requiresAuth: true },  // Add meta field to require auth
+    },
+    {
+        path: "/register",
+        name: "Register",
+        component: Register,
     },
 ];
 
