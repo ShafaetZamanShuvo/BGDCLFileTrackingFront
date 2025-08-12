@@ -1,7 +1,8 @@
-const https = require('https');
 const http = require('http');
 
 exports.handler = async (event, context) => {
+  console.log('Function called with event:', JSON.stringify(event, null, 2));
+  
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -15,13 +16,15 @@ exports.handler = async (event, context) => {
     };
   }
 
-  const { httpMethod, body, headers } = event;
+  const { httpMethod, body, headers, queryStringParameters } = event;
   
-  // Extract the API path from the function path
-  const apiPath = event.path.replace('/.netlify/functions/api-proxy', '') || '/';
-  const targetUrl = `http://202.5.37.238:50004/api${apiPath}`;
+  // Get the path from query parameters (from the redirect)
+  const apiPath = queryStringParameters?.path || 'auth/signin';
+  const targetUrl = `http://202.5.37.238:50004/api/${apiPath}`;
 
   console.log('Proxying request to:', targetUrl);
+  console.log('Method:', httpMethod);
+  console.log('Body:', body);
 
   return new Promise((resolve, reject) => {
     const url = new URL(targetUrl);
@@ -45,6 +48,9 @@ exports.handler = async (event, context) => {
       });
 
       res.on('end', () => {
+        console.log('Response status:', res.statusCode);
+        console.log('Response body:', responseBody);
+        
         resolve({
           statusCode: res.statusCode,
           headers: {
