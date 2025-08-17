@@ -4,6 +4,7 @@ import Login from './components/Login.vue';
 import PendingFiles from './components/PendingFiles.vue';
 import RequestedFiles from './components/RequestedFiles.vue';
 import Register from './components/Register.vue';
+import UserInfo from './components/UserInfo.vue';
 
 const routes = [
     {
@@ -37,6 +38,12 @@ const routes = [
         path: "/register",
         name: "Register",
         component: Register,
+    },
+    {
+        path: "/settings/add-user",
+        name: "UserInfo",
+        component: UserInfo,
+        meta: { requiresAuth: true },  // Add meta field to require auth
     },
 ];
 

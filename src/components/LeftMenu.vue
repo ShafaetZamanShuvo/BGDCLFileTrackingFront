@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 // Props
@@ -15,6 +15,10 @@ const props = defineProps({
   username: {
     type: String,
     default: ''
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false   // if false, settings menu won't show
   }
 });
 
@@ -23,6 +27,7 @@ const emit = defineEmits(['toggle-collapse']);
 
 // Reactive state
 const isCollapsed = ref(false);
+const isSettingsOpen = ref(false);
 const route = useRoute();
 const currentPath = computed(() => route.path);
 
@@ -30,6 +35,11 @@ const currentPath = computed(() => route.path);
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
   emit('toggle-collapse', isCollapsed.value);
+};
+
+const toggleSettingsMenu = () => {
+  if (!props.isAdmin) return;
+  isSettingsOpen.value = !isSettingsOpen.value;
 };
 
 // Handle window resizing for responsive design
@@ -47,7 +57,6 @@ onMounted(() => {
 
 <template>
   <div class="left-menu bg-light border-end" :class="{ 'collapsed': isCollapsed }">
-    
     
     <nav class="nav flex-column py-3">
       <router-link to="/accept-files" class="nav-link d-flex align-items-center py-3 px-3"
@@ -68,11 +77,46 @@ onMounted(() => {
         </span>
       </router-link>
       
-      <router-link to="/settings" class="nav-link d-flex align-items-center py-3 px-3"
-        :class="{ active: currentPath === '/settings' }">
-        <i class="bi bi-gear me-3"></i>
-        <span class="menu-text flex-grow-1" :class="{ 'd-none': isCollapsed }">Settings</span>
-      </router-link>
+      <!-- Settings menu (only if admin) -->
+      <div v-if="isAdmin" class="nav-item">
+        <a href="javascript:void(0)" 
+           class="nav-link d-flex align-items-center py-3 px-3"
+           :class="{ active: currentPath.startsWith('/settings') }"
+           @click="toggleSettingsMenu">
+          <i class="bi bi-gear me-3"></i>
+          <span class="menu-text flex-grow-1" :class="{ 'd-none': isCollapsed }">Settings</span>
+          <i class="bi ms-auto" :class="isSettingsOpen ? 'bi-chevron-up' : 'bi-chevron-down'" v-if="!isCollapsed"></i>
+        </a>
+        
+        <!-- Submenu -->
+        <div v-if="isSettingsOpen && !isCollapsed" class="submenu ps-5">
+          <router-link to="/settings/add-file-info" class="nav-link py-2" 
+            :class="{ active: currentPath === '/settings/add-file-info' }">
+            <i class="bi bi-file-plus me-2"></i>
+         Add File Info
+          </router-link>
+          <router-link to="/settings/add-user" class="nav-link py-2" 
+            :class="{ active: currentPath === '/settings/add-user' }">
+            <i class="bi bi-person-plus me-2"></i>
+            Add User Info
+          </router-link>
+          <router-link to="/settings/add-department" class="nav-link py-2" 
+            :class="{ active: currentPath === '/settings/add-department' }">
+            <i class="bi bi-building me-2"></i>
+            Add Department
+          </router-link>
+          <router-link to="/settings/add-designation" class="nav-link py-2" 
+            :class="{ active: currentPath === '/settings/add-designation' }">
+            <i class="bi bi-briefcase me-2"></i>
+            Add Designation
+          </router-link>
+          <router-link to="/settings/add-section" class="nav-link py-2" 
+            :class="{ active: currentPath === '/settings/add-section' }">
+            <i class="bi bi-building me-2"></i>
+            Add Section
+          </router-link>
+        </div>
+      </div>
     </nav>
     
     <div class="mt-auto border-top p-3">
@@ -125,6 +169,11 @@ onMounted(() => {
   background-color: rgba(0, 0, 0, 0.075);
   border-left: 4px solid #0d6efd;
   font-weight: 600;
+}
+
+.submenu .nav-link {
+  font-size: 0.9rem;
+  padding-left: 1rem;
 }
 
 /* For mobile screens */

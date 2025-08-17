@@ -10,6 +10,7 @@ const currentUser = ref(null);
 const acceptFilesCount = ref(0);
 const requestedFilesCount = ref(0);
 const isMenuCollapsed = ref(false);
+const isAdmin = ref(false);
 
 const handleMenuCollapse = (collapsed) => {
   isMenuCollapsed.value = collapsed;
@@ -37,6 +38,13 @@ const getRequestedFilesCount = async () => {
 
 const loadUserInfo = async () => {
     try {
+      if(localStorage.getItem('user') != null) {
+        var user = JSON.parse(localStorage.getItem('user'));
+        //if user.roles contains "ROLE_ADMIN", set isAdmin to true
+        isAdmin.value = user.roles.includes('ROLE_ADMIN');
+      } else {
+        isAdmin.value = false;
+      }
     const token = localStorage.getItem('authToken');
     if (token) {
       currentUser.value = await getUserInfo(token);
@@ -64,6 +72,7 @@ onMounted(async () => {
       :acceptFilesCount="acceptFilesCount"
       :requestedFilesCount="requestedFilesCount"
       :username="currentUser?.fullName || ''"
+      :isAdmin="isAdmin"
       @toggle-collapse="handleMenuCollapse"
     />
 
