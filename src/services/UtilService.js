@@ -16,6 +16,20 @@ export default {
       throw error;
     }
   },
+  async getAllUserIds() {
+    const token = localStorage.getItem("authToken");
+    try {
+      const response = await axios.get(`${API_URL}/api/user/get-all-user-ids`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+  },
   async getAllDepartments() {
     const token = localStorage.getItem("authToken");
     try {

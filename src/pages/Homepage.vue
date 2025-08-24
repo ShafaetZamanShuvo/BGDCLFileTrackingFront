@@ -43,6 +43,7 @@ const isMenuCollapsed = ref(false);
 // Add this to track current user for the left menu
 const currentUser = ref(null);
 const isFileRequested = ref(false);
+const isAdmin = ref(false);
 
 // Fix: Eliminated redundant fileReturnable ref since we have isFileReturnable computed property
 // This removes the bug where the two could get out of sync
@@ -51,28 +52,28 @@ const handleMenuCollapse = (collapsed) => {
   isMenuCollapsed.value = collapsed;
 };
 
-// Improved user info loading function with better error handling
 const loadUserInfo = async () => {
   try {
     loading.value = true;
     const storedUserInfo = getUserInfo(localStorage.getItem('authToken'));
-    
     if (!storedUserInfo) {
       console.warn('No user info found in localStorage');
       return;
     }
-    
-    // Handle both Promise and direct object scenarios
     if (storedUserInfo && typeof storedUserInfo === 'object' && typeof storedUserInfo.then === 'function') {
       console.log('userInfo is a Promise, awaiting resolution...');
       userInfo.value = await storedUserInfo;
     } else {
       userInfo.value = storedUserInfo;
     }
-    
-    // Set current user for left menu only when we have valid data
     if (userInfo.value && userInfo.value.userId) {
       currentUser.value = userInfo.value;
+      if (localStorage.getItem('user') != null) {
+        var user = JSON.parse(localStorage.getItem('user'));
+        isAdmin.value = user.roles.includes('ROLE_ADMIN');
+      } else {
+        isAdmin.value = false;
+      }
       console.log('User info loaded:', userInfo.value);
     } else {
       console.warn('Loaded user info is incomplete');
@@ -85,13 +86,14 @@ const loadUserInfo = async () => {
   }
 };
 
+
 // Improved function with error handling
 const getToAcceptFilesCount = async () => {
   if (!userInfo.value?.departmentId) {
     console.warn('User info not available yet, cannot get files count');
     return;
   }
-  
+
   try {
     const response = await FileService.getToAcceptFilesList(userInfo.value.departmentId);
     if (Array.isArray(response)) {
@@ -136,7 +138,7 @@ const takeBackFile = async (file) => {
 // Call loadUserInfo when component is mounted
 onMounted(async () => {
   await loadUserInfo();
-  
+
   // Only call these methods if userInfo was successfully loaded
   if (userInfo.value?.departmentId) {
     await Promise.all([
@@ -174,7 +176,7 @@ const showError = (message) => {
 // Handle search logic
 const handleSearch = async () => {
   showHistory.value = false;
-  
+
   try {
     if (!searchQuery.value.trim()) {
       showError('Please enter a Customer Old Code');
@@ -200,7 +202,7 @@ const handleSearch = async () => {
       // If no error in the response, the file is found
       fileInfo.value = response;
       isFileFound.value = true; // Mark file as found
-      
+
       // Check if the file has been requested from this department
       if (fileInfo.value.fileRequests && Array.isArray(fileInfo.value.fileRequests)) {
         checkFileRequestStatus(fileInfo.value.fileRequests);
@@ -229,7 +231,7 @@ const getRequestedFilesCount = async () => {
     console.warn('User department info not available, cannot get requested files count');
     return;
   }
-  
+
   try {
     const response = await FileService.getRequestedFilesList(currentUser.value.departmentId);
     if (Array.isArray(response)) {
@@ -242,6 +244,8 @@ const getRequestedFilesCount = async () => {
     console.error('Error loading requested files count:', err);
   }
 };
+
+
 
 // Improved function with better error handling
 const checkFileRequestStatus = (fileRequests) => {
@@ -256,7 +260,7 @@ const checkFileRequestStatus = (fileRequests) => {
     isFileRequested.value = fileRequests.some(
       request => request.requestingDepartmentId === currentUser.value.departmentId
     );
-    
+
     console.log('File request status:', isFileRequested.value);
   } catch (err) {
     console.error('Error checking file request status:', err);
@@ -352,12 +356,12 @@ const refreshFileData = async (fileCode) => {
     const updatedFileResponse = await FileService.getFileStatus(fileCode);
     if (updatedFileResponse && !updatedFileResponse.error) {
       fileInfo.value = updatedFileResponse;
-      
+
       // Check if file has been requested from this department
       if (updatedFileResponse.fileRequests && Array.isArray(updatedFileResponse.fileRequests)) {
         checkFileRequestStatus(updatedFileResponse.fileRequests);
       }
-      
+
       // Refresh transaction history if it's currently shown
       if (showHistory.value) {
         await loadTransactionHistory(fileCode);
@@ -398,7 +402,7 @@ const showTransactionHistory = async (fileCode) => {
   try {
     // Toggle display state
     showHistory.value = !showHistory.value;
-    
+
     // Only load data if we're showing history and don't have data yet
     if (showHistory.value && (!transactionHistory.value.length || fileInfo.value?.fileCode !== fileCode)) {
       await loadTransactionHistory(fileCode);
@@ -429,11 +433,11 @@ const acceptFile = async () => {
   try {
     loading.value = true;
     const response = await FileService.acceptFile(payload);
-    
+
     if (response && !response.error) {
       fileInfo.value = response;
       showSuccess('File accepted successfully');
-      
+
       // Refresh pending files count
       await getToAcceptFilesCount();
     } else {
@@ -472,15 +476,15 @@ const requestFile = async (file) => {
   try {
     loading.value = true;
     const response = await FileService.requestFile(payload);
-    
+
     if (response && !response.error) {
       fileInfo.value = response;
       isFileRequested.value = true;
       showSuccess('File requested successfully');
-      
+
       // Clear request note after successful request
       requestNote.value = '';
-      
+
       // Refresh requested files count
       await getRequestedFilesCount();
     } else {
@@ -496,9 +500,9 @@ const requestFile = async (file) => {
 
 // Improved computed property for department matching
 const isDepartmentMatching = computed(() => {
-  return userInfo.value?.departmentId && 
-         fileInfo.value?.currentDepartmentId && 
-         userInfo.value.departmentId === fileInfo.value.currentDepartmentId;
+  return userInfo.value?.departmentId &&
+    fileInfo.value?.currentDepartmentId &&
+    userInfo.value.departmentId === fileInfo.value.currentDepartmentId;
 });
 
 // Fixed and improved isFileReturnable computed property
@@ -507,11 +511,11 @@ const isFileReturnable = computed(() => {
   if (!userInfo.value?.departmentId || !fileInfo.value?.currentDepartmentId) {
     return false;
   }
-  
+
   // Check if file is not yet received in another department (pending status)
-  if (fileInfo.value.currentDepartmentId !== userInfo.value.departmentId && 
-      fileInfo.value.status === "pending") {
-    
+  if (fileInfo.value.currentDepartmentId !== userInfo.value.departmentId &&
+    fileInfo.value.status === "pending") {
+
     // Check if the file was sent from current user's department
     const lastTransaction = fileInfo.value.lastTransaction;
     if (lastTransaction && lastTransaction.fromDepartmentId === userInfo.value.departmentId) {
@@ -523,7 +527,7 @@ const isFileReturnable = computed(() => {
       return true;
     }
   }
-  
+
   return false;
 });
 
@@ -547,7 +551,7 @@ watch(() => fileInfo.value?.currentDepartmentId, (newVal) => {
     <Header />
 
     <!-- Left Menu -->
-    <LeftMenu :acceptFilesCount="acceptFilesCount" :requestedFilesCount="requestedFilesCount"
+    <LeftMenu :acceptFilesCount="acceptFilesCount" :requestedFilesCount="requestedFilesCount" :isAdmin="isAdmin"
       :username="currentUser?.fullName || ''" @toggle-collapse="handleMenuCollapse" />
 
     <!-- Main content container -->
@@ -582,7 +586,7 @@ watch(() => fileInfo.value?.currentDepartmentId, (newVal) => {
           <div class="card-body">
             <p>
               <strong>Customer Old Code:</strong> <span class="text-primary"><strong class="fs-6">{{ fileInfo.fileCode
-                  }}</strong></span>
+              }}</strong></span>
             </p>
             <p>
               <strong>Customer Name:</strong> <span class="text-info fs-6">{{ fileInfo.customerName }}</span>
@@ -632,9 +636,9 @@ watch(() => fileInfo.value?.currentDepartmentId, (newVal) => {
               </div>
 
               <!-- File In -->
-              <button v-if="isFileReturnable" class="btn btn-primary" @click="takeBackFile(fileInfo)" :disabled="loading"
-              :title="`This file hasn't been received yet in ${fileInfo.value?.currentDepartment || 'this department'}`"
-              >
+              <button v-if="isFileReturnable" class="btn btn-primary" @click="takeBackFile(fileInfo)"
+                :disabled="loading"
+                :title="`This file hasn't been received yet in ${fileInfo.value?.currentDepartment || 'this department'}`">
                 <i class="bi bi-box-arrow-right me-2"></i>
                 File In
               </button>
@@ -686,11 +690,13 @@ watch(() => fileInfo.value?.currentDepartmentId, (newVal) => {
                           <td class="text-nowrap text-secondary">{{ new Date(txn.dateTime).toLocaleString() }}</td>
                           <td>
                             <strong>{{ txn.fromUser?.fullName || 'N/A' }}</strong><br />
-                            <small class="text-muted">{{ txn.fromUser?.designation || '' }}<br />{{ txn.fromUser?.section || '' }}</small>
+                            <small class="text-muted">{{ txn.fromUser?.designation || '' }}<br />{{
+                              txn.fromUser?.section || '' }}</small>
                           </td>
                           <td>
                             <strong>{{ txn.toUser?.fullName || 'N/A' }}</strong><br />
-                            <small class="text-muted">{{ txn.toUser?.designation || '' }}<br />{{ txn.toUser?.section || '' }}</small>
+                            <small class="text-muted">{{ txn.toUser?.designation || '' }}<br />{{ txn.toUser?.section ||
+                              '' }}</small>
                           </td>
                           <td>
                             <span class="badge bg-info text-dark">{{ txn.fromDepartment || 'N/A' }}</span>
